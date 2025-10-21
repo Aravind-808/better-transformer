@@ -20,22 +20,22 @@ class RotaryPositionalEmbedding(nn.Module):
         self.register_buffer("cos", torch.cos(angles), persistent=False)
         self.register_buffer("sin", torch.sin(angles), persistent=False)
 
-        def forward(self, q, k, seq_len=None):
-            if seq_len is None:
-                seq_len = q.shape[-2]
+    def forward(self, q, k, seq_len=None):
+        if seq_len is None:
+            seq_len = q.shape[-2]
 
-            cos = self.cos[:seq_len, :].unsqueeze(0).unsqueeze(0)  # [1,1,seq_len,dim/2]
-            sin = self.sin[:seq_len, :].unsqueeze(0).unsqueeze(0)
+        cos = self.cos[:seq_len, :].unsqueeze(0).unsqueeze(0)  # [1,1,seq_len,dim/2]
+        sin = self.sin[:seq_len, :].unsqueeze(0).unsqueeze(0)
 
-            def rotate_half(x):
-                x1 = x[..., ::2]
-                x2 = x[..., 1::2]
-                return torch.stack((-x2, x1), dim=-1).reshape_as(x)
+        def rotate_half(x):
+            x1 = x[..., ::2]
+            x2 = x[..., 1::2]
+            return torch.stack((-x2, x1), dim=-1).reshape_as(x)
 
-            # interleave cos/sin along last dimension to match x
-            cos = torch.repeat_interleave(cos, 2, dim=-1)
-            sin = torch.repeat_interleave(sin, 2, dim=-1)
+        # interleave cos/sin along last dimension to match x
+        cos = torch.repeat_interleave(cos, 2, dim=-1)
+        sin = torch.repeat_interleave(sin, 2, dim=-1)
 
-            q_rot = (q * cos) + (rotate_half(q)*sin)
-            k_rot = (k * cos) + (rotate_half(k)*sin)
-            return q_rot, k_rot
+        q_rot = (q * cos) + (rotate_half(q)*sin)
+        k_rot = (k * cos) + (rotate_half(k)*sin)
+        return q_rot, k_rot
