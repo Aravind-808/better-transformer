@@ -48,15 +48,13 @@ class MultiHeadAttention(nn.Module):
     # combine them back
     def combine_heads(self, x):
         batch_size, num, seq_length,  d_k = x.size()
-        return x.transpose(1, 2).contiguous().view(batch_size, seq_length, self.d)
+        return x.transpose(1, 2).contiguous().view(batch_size, seq_length, self.d_model)
 
     # main mechanism that is done during inference
     def forward(self, Q, K, V, mask = None):
         Q = self.split_heads(self.W_q(Q))
         K = self.split_heads(self.W_k(K))
         V = self.split_heads(self.W_v(V))
-
-        Q, K = self.rope(Q, K)
 
         # initialize k_cache and v_cache
         batch, head, token_size, _ = K.shape # V's shape is also same
@@ -69,7 +67,12 @@ class MultiHeadAttention(nn.Module):
                 d_k= self.d_k,
                 device = device
                 )
-            
+        # keep track of the current index in seq
+        start_pos = self.kv_cache.cache_idx
+
+        # apply rope wit current pos offset
+        Q, K = self.rope(Q, K, pos_offset = start_pos)
+
         # update caches in place
         self.kv_cache.update_cache(K, V)
         # get new cached values

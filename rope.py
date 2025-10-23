@@ -20,12 +20,12 @@ class RotaryPositionalEmbedding(nn.Module):
         self.register_buffer("cos", torch.cos(angles), persistent=False)
         self.register_buffer("sin", torch.sin(angles), persistent=False)
 
-    def forward(self, q, k, seq_len=None):
+    def forward(self, q, k, seq_len=None, pos_offset = 0):
         if seq_len is None:
             seq_len = q.shape[-2]
 
-        cos = self.cos[:seq_len, :].unsqueeze(0).unsqueeze(0)  # [1,1,seq_len,dim/2]
-        sin = self.sin[:seq_len, :].unsqueeze(0).unsqueeze(0)
+        cos = self.cos[pos_offset:pos_offset+seq_len, :].unsqueeze(0).unsqueeze(0)  # [1,1,seq_len,dim/2]
+        sin = self.sin[pos_offset:pos_offset+seq_len, :].unsqueeze(0).unsqueeze(0)
 
         def rotate_half(x):
             x1 = x[..., ::2]
